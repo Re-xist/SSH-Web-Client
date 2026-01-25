@@ -1,0 +1,37 @@
+{
+  "name": "ssh-web-client",
+  "version": "1.0.0",
+  "description": "Web-based SSH Client for Remote Server Management with file operations, terminal, and more",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "node scripts/obfuscate.js",
+    "build:prod": "npm run build && node server.dist.js"
+  },
+  "keywords": [
+    "ssh",
+    "web-client",
+    "remote",
+    "server-management",
+    "terminal",
+    "file-manager",
+    "sftp",
+    "web-ssh"
+  ],
+  "author": "Re-xist",
+  "license": "CC-BY-NC-SA-4.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Re-xist/ssh-web-client.git"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "ssh2": "^1.14.0"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^5.1.0"
+  }
+}

@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  ssh-web-client:
+    build: .
+    container_name: ssh-web-client
+    ports:
+      - "2211:2211"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - ssh-ui-net
+
+networks:
+  ssh-ui-net:
+    driver: bridge

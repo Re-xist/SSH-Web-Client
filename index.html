@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>SSH Web Client - Real Remote Server Manager</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- CodeMirror for Editor -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/shell/shell.min.js"></script>
+    <!-- xterm.js for Terminal -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00eeff",
+                        "background-light": "#f2f2f2",
+                        "background-dark": "#17191c",
+                        "surface": "#25282c",
+                        "surface-highlight": "#303030",
+                        "border-dark": "#333333",
+                        "text-muted": "#CCCCCC",
+                        "success": "#22c55e",
+                        "danger": "#ef4444",
+                        "warning": "#f59e0b",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-muted font-display h-screen overflow-hidden">
+
+    <!-- Login Page -->
+    <div id="login-page" class="h-full flex items-center justify-center bg-background-dark">
+        <div class="w-full max-w-md">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <div class="size-20 mx-auto flex items-center justify-center bg-primary/10 rounded-full border border-primary/30 mb-4">
+                    <span class="material-symbols-outlined text-5xl text-primary">terminal</span>
+                </div>
+                <h1 class="text-3xl font-bold text-white mb-2">SSH Web Client</h1>
+                <p class="text-text-muted text-sm">Real SSH Connection to Remote Server</p>
+            </div>
+
+            <!-- Login Form -->
+            <div class="bg-surface border border-border-dark rounded-xl p-6 shadow-2xl">
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Server Address</label>
+                        <div class="flex gap-3">
+                            <input type="text" id="ssh-host" required placeholder="192.168.1.100" class="flex-1 h-11 bg-background-dark border border-border-dark rounded px-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                            <input type="number" id="ssh-port" value="22" placeholder="22" class="w-24 h-11 bg-background-dark border border-border-dark rounded px-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Username</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted/50 text-[20px]">person</span>
+                            <input type="text" id="ssh-user" required placeholder="root" class="w-full h-11 bg-background-dark border border-border-dark rounded pl-10 pr-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Password</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted/50 text-[20px]">lock</span>
+                            <input type="password" id="ssh-password" required placeholder="••••••••" class="w-full h-11 bg-background-dark border border-border-dark rounded pl-10 pr-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Initial Directory (Optional)</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted/50 text-[20px]">folder</span>
+                            <input type="text" id="ssh-home" placeholder="/home/user" class="w-full h-11 bg-background-dark border border-border-dark rounded pl-10 pr-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full h-11 bg-primary hover:bg-[#33f2ff] text-background-dark rounded font-bold flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,238,255,0.3)] transition-all mt-6">
+                        <span class="material-symbols-outlined">login</span>
+                        Connect to SSH Server
+                    </button>
+                </form>
+
+                <!-- Error Message -->
+                <div id="login-error" class="hidden mt-4 p-3 bg-danger/10 border border-danger/30 rounded text-danger text-sm"></div>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="mt-6 text-center">
+                <p class="text-xs text-text-muted/60 flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-[16px]">shield_lock</span>
+                    Direct SSH connection using SSH2 protocol
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application (Hidden by default) -->
+    <div id="main-app" class="h-full flex flex-col hidden">
+        <!-- Top Navigation -->
+        <header class="h-14 flex items-center justify-between border-b border-border-dark bg-surface px-4 shrink-0 z-20">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="size-8 flex items-center justify-center bg-primary/10 rounded text-primary">
+                        <span class="material-symbols-outlined text-xl">terminal</span>
+                    </div>
+                    <div>
+                        <h2 class="text-white text-sm font-bold">SSH Client</h2>
+                        <p class="text-[10px] text-primary font-mono" id="connection-info">root@192.168.1.42:22</p>
+                    </div>
+                </div>
+                <div class="h-6 w-px bg-border-dark"></div>
+                <!-- Connection Status -->
+                <div id="connection-status" class="flex items-center gap-2 px-3 py-1.5 bg-success/10 rounded border border-success/30">
+                    <span class="size-2 rounded-full bg-success ssh-pulse"></span>
+                    <span class="text-xs font-semibold text-success">Connected</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="showSearchDialog()" class="h-9 px-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded text-xs font-bold text-primary flex items-center gap-2 transition-all">
+                    <span class="material-symbols-outlined text-[18px]">search</span>
+                    <span class="hidden sm:inline">Search</span>
+                </button>
+                <button onclick="toggleTerminal()" class="h-9 px-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded text-xs font-bold text-text-muted flex items-center gap-2 transition-all">
+                    <span class="material-symbols-outlined text-[18px]">terminal</span>
+                    <span class="hidden sm:inline">Terminal</span>
+                </button>
+                <button onclick="refreshFiles()" class="h-9 px-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded text-xs font-bold text-text-muted flex items-center gap-2 transition-all">
+                    <span class="material-symbols-outlined text-[18px]">refresh</span>
+                </button>
+                <button onclick="disconnectSSH()" class="h-9 px-4 bg-danger/10 hover:bg-danger/20 border border-danger/30 rounded text-xs font-bold text-danger flex items-center gap-2 transition-all">
+                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                    <span class="hidden sm:inline">Disconnect</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="flex flex-1 overflow-hidden relative">
+            <!-- Left Sidebar: File Tree -->
+            <aside class="w-56 bg-surface flex flex-col border-r border-border-dark shrink-0">
+                <div class="p-3 border-b border-border-dark bg-surface-highlight/30">
+                    <p class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Remote Filesystem</p>
+                    <p class="text-[10px] text-primary font-mono truncate" id="current-path-display">/var/www</p>
+                </div>
+                <nav class="flex-1 overflow-y-auto py-3 px-2" id="file-tree">
+                    <!-- Quick paths -->
+                    <div onclick="navigateToPath('/')" class="flex items-center gap-2 px-2 py-1.5 text-sm text-text-muted hover:text-white cursor-pointer rounded hover:bg-white/5 transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">home</span>
+                        <span>Root (/)</span>
+                    </div>
+                    <div onclick="navigateToPath('/var')" class="flex items-center gap-2 px-2 py-1.5 text-sm text-text-muted hover:text-white cursor-pointer rounded hover:bg-white/5 transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">folder</span>
+                        <span>/var</span>
+                    </div>
+                    <div onclick="navigateToPath('/home')" class="flex items-center gap-2 px-2 py-1.5 text-sm text-text-muted hover:text-white cursor-pointer rounded hover:bg-white/5 transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">folder</span>
+                        <span>/home</span>
+                    </div>
+                    <div onclick="navigateToPath('/etc')" class="flex items-center gap-2 px-2 py-1.5 text-sm text-text-muted hover:text-white cursor-pointer rounded hover:bg-white/5 transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">folder</span>
+                        <span>/etc</span>
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- Main Content Panel -->
+            <main class="flex-1 flex flex-col min-w-0 bg-background-dark">
+                <!-- Breadcrumb & Toolbar -->
+                <div class="px-4 py-3 flex items-center justify-between border-b border-border-dark bg-surface-highlight/20">
+                    <div class="flex items-center gap-2 text-sm overflow-x-auto" id="breadcrumb">
+                        <!-- Breadcrumb will be generated here -->
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button onclick="showUploadDialog()" class="h-8 px-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded text-xs font-bold text-primary flex items-center gap-1.5 transition-all">
+                            <span class="material-symbols-outlined text-[16px]">upload</span>
+                            Upload
+                        </button>
+                        <button onclick="showNewFileDialog()" class="h-8 px-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded text-xs font-bold text-text-muted flex items-center gap-1.5 transition-all">
+                            <span class="material-symbols-outlined text-[16px]">note_add</span>
+                            File
+                        </button>
+                        <button onclick="showNewFolderDialog()" class="h-8 px-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded text-xs font-bold text-text-muted flex items-center gap-1.5 transition-all">
+                            <span class="material-symbols-outlined text-[16px]">create_new_folder</span>
+                            Folder
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Table -->
+                <div class="flex-1 overflow-auto" id="file-list">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-surface sticky top-0 z-10">
+                            <tr>
+                                <th class="px-4 py-2 font-semibold text-text-muted text-xs uppercase tracking-wider w-8">
+                                    <input type="checkbox" id="select-all" class="rounded bg-background-dark border-border-dark text-primary focus:ring-0"/>
+                                </th>
+                                <th class="px-4 py-2 font-semibold text-text-muted text-xs uppercase tracking-wider">Name</th>
+                                <th class="px-4 py-2 font-semibold text-text-muted text-xs uppercase tracking-wider">Size</th>
+                                <th class="px-4 py-2 font-semibold text-text-muted text-xs uppercase tracking-wider">Permissions</th>
+                                <th class="px-4 py-2 font-semibold text-text-muted text-xs uppercase tracking-wider">Modified</th>
+                                <th class="px-4 py-2 font-semibold text-text-muted text-xs uppercase tracking-wider text-right w-20">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="file-table-body" class="divide-y divide-border-dark">
+                            <!-- Files will be rendered here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Terminal Panel -->
+                <div id="terminal-panel" class="h-96 bg-[#1e1e1e] border-t border-white/10 flex flex-col shrink-0 relative">
+                    <!-- macOS-style Title Bar -->
+                    <div class="flex items-center justify-between px-4 py-2 bg-gradient-to-b from-[#2d2d2d] to-[#252525] border-b border-black/30">
+                        <div class="flex items-center gap-2">
+                            <!-- macOS Window Controls -->
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="toggleTerminal()" class="size-3 rounded-full bg-[#ff5f56] hover:bg-[#ff4138] transition-colors" title="Close"></button>
+                                <button onclick="minimizeTerminal()" class="size-3 rounded-full bg-[#ffbd2e] hover:bg-[#ffa800] transition-colors" title="Minimize"></button>
+                                <button onclick="expandTerminal()" class="size-3 rounded-full bg-[#27c93f] hover:bg-[#1faa2e] transition-colors" title="Expand"></button>
+                            </div>
+                            <span class="ml-4 text-xs text-white/80 font-semibold tracking-wide">SSH Terminal — Interactive Shell</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="clearTerminal()" class="hover:bg-white/10 text-white/60 hover:text-white/90 rounded px-2 py-1 text-xs transition-all" title="Clear">
+                                <span class="material-symbols-outlined text-[16px]">delete_outline</span>
+                            </button>
+                            <button onclick="toggleTerminal()" class="hover:bg-white/10 text-white/60 hover:text-white/90 rounded px-2 py-1 text-xs transition-all" title="Hide">
+                                <span class="material-symbols-outlined text-[16px]">remove</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="terminal" class="flex-1 overflow-hidden"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- File Editor Modal -->
+    <div id="editor-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="w-full h-full bg-background-dark rounded-lg border border-border-dark flex flex-col max-w-6xl">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-border-dark bg-surface">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">edit</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-white" id="editor-filename">filename.txt</h3>
+                        <p class="text-[10px] text-text-muted font-mono" id="editor-path">/var/www/html/filename.txt</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="saveFile()" class="h-8 px-4 bg-primary hover:bg-[#33f2ff] text-background-dark rounded text-xs font-bold flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]">save</span>
+                        Save
+                    </button>
+                    <button onclick="closeEditor()" class="h-8 px-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded text-xs font-bold text-text-muted">
+                        <span class="material-symbols-outlined text-[16px]">close</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <textarea id="code-editor"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Modal -->
+    <div id="search-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="w-full h-full max-h-[80vh] bg-background-dark rounded-lg border border-border-dark flex flex-col max-w-4xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-border-dark bg-surface">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">search</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Search Files</h3>
+                        <p class="text-[10px] text-text-muted">Search for files and directories on remote server</p>
+                    </div>
+                </div>
+                <button onclick="closeSearchDialog()" class="h-8 px-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded text-xs font-bold text-text-muted">
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                </button>
+            </div>
+
+            <!-- Search Options -->
+            <div class="p-6 border-b border-border-dark bg-surface/50">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Search Path -->
+                    <div>
+                        <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Search Path</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted/50 text-[20px]">folder</span>
+                            <input type="text" id="search-path" value="/" class="w-full h-10 bg-background-dark border border-border-dark rounded pl-10 pr-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                        </div>
+                    </div>
+
+                    <!-- Search Type -->
+                    <div>
+                        <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Search Type</label>
+                        <select id="search-type" class="w-full h-10 bg-background-dark border border-border-dark rounded px-4 text-sm text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                            <option value="name">By Name</option>
+                            <option value="content">By Content</option>
+                            <option value="extension">By Extension</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Search Pattern -->
+                <div class="mt-4">
+                    <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Search Pattern</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted/50 text-[20px]">text_fields</span>
+                        <input type="text" id="search-pattern" placeholder="Enter filename, extension, or content to search..." class="w-full h-10 bg-background-dark border border-border-dark rounded pl-10 pr-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" onkeypress="if(event.key === 'Enter') executeSearch()"/>
+                    </div>
+                </div>
+
+                <!-- Search Button -->
+                <div class="mt-4 flex items-center justify-between">
+                    <p class="text-[10px] text-text-muted">Search may take time on large directories</p>
+                    <button onclick="executeSearch()" class="h-9 px-6 bg-primary hover:bg-[#33f2ff] text-background-dark rounded font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(0,238,255,0.3)] transition-all">
+                        <span class="material-symbols-outlined text-[18px]">search</span>
+                        Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <div class="flex-1 overflow-auto p-4">
+                <div id="search-loading" class="hidden flex items-center justify-center py-12">
+                    <div class="text-center">
+                        <div class="size-12 mx-auto mb-3 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p class="text-white text-sm">Searching...</p>
+                    </div>
+                </div>
+
+                <div id="search-results-container" class="hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-xs font-bold text-text-muted uppercase tracking-wider">Search Results</h4>
+                        <span id="search-results-count" class="text-xs text-primary font-semibold">0 files found</span>
+                    </div>
+
+                    <div id="search-results-list" class="space-y-1">
+                        <!-- Results will be rendered here -->
+                    </div>
+                </div>
+
+                <div id="search-empty" class="flex items-center justify-center py-12">
+                    <div class="text-center text-text-muted">
+                        <span class="material-symbols-outlined text-4xl mb-2 opacity-50">search_off</span>
+                        <p class="text-sm">Enter a search pattern and click Search</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-background-dark rounded-lg border border-border-dark flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-border-dark bg-surface">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">upload</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Upload File</h3>
+                        <p class="text-[10px] text-text-muted">Upload file to remote server</p>
+                    </div>
+                </div>
+                <button onclick="closeUploadDialog()" class="h-8 px-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded text-xs font-bold text-text-muted">
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <!-- File Input -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Select File</label>
+                    <div class="relative">
+                        <input type="file" id="upload-file-input" class="w-full h-10 bg-background-dark border border-border-dark rounded px-4 text-sm text-white file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:bg-primary/10 file:text-primary file:cursor-pointer focus:outline-none focus:border-primary"/>
+                    </div>
+                </div>
+
+                <!-- Remote Path -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Remote Path</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted/50 text-[20px]">folder</span>
+                        <input type="text" id="upload-remote-path" class="w-full h-10 bg-background-dark border border-border-dark rounded pl-10 pr-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                    </div>
+                </div>
+
+                <!-- Upload Progress -->
+                <div id="upload-progress" class="hidden mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-text-muted">Uploading...</span>
+                        <span id="upload-progress-text" class="text-xs text-primary">0%</span>
+                    </div>
+                    <div class="h-2 bg-background-dark rounded overflow-hidden">
+                        <div id="upload-progress-bar" class="h-full bg-primary transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Upload Button -->
+                <button onclick="executeUpload()" class="w-full h-10 bg-primary hover:bg-[#33f2ff] text-background-dark rounded font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,238,255,0.3)] transition-all">
+                    <span class="material-symbols-outlined text-[18px]">upload</span>
+                    Upload File
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compress Modal -->
+    <div id="compress-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-background-dark rounded-lg border border-border-dark flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-border-dark bg-surface">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">folder_zip</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Compress</h3>
+                        <p class="text-[10px] text-text-muted">Create archive from file/folder</p>
+                    </div>
+                </div>
+                <button onclick="closeCompressDialog()" class="h-8 px-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded text-xs font-bold text-text-muted">
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <!-- Source Path (read-only) -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Source</label>
+                    <input type="text" id="compress-source-path" readonly class="w-full h-10 bg-background-dark border border-border-dark rounded px-4 text-sm text-text-muted"/>
+                </div>
+
+                <!-- Archive Name -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Archive Name</label>
+                    <input type="text" id="compress-archive-name" placeholder="archive.tar.gz" class="w-full h-10 bg-background-dark border border-border-dark rounded px-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                </div>
+
+                <!-- Format Selection -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Format</label>
+                    <select id="compress-format" class="w-full h-10 bg-background-dark border border-border-dark rounded px-4 text-sm text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                        <option value="tar.gz">tar.gz (Recommended)</option>
+                        <option value="zip">ZIP</option>
+                        <option value="tar.bz2">tar.bz2</option>
+                    </select>
+                </div>
+
+                <!-- Compress Button -->
+                <button onclick="executeCompress()" class="w-full h-10 bg-primary hover:bg-[#33f2ff] text-background-dark rounded font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,238,255,0.3)] transition-all">
+                    <span class="material-symbols-outlined text-[18px]">folder_zip</span>
+                    Compress
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extract Modal -->
+    <div id="extract-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-background-dark rounded-lg border border-border-dark flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-border-dark bg-surface">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">unzip</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Extract Archive</h3>
+                        <p class="text-[10px] text-text-muted">Extract files from archive</p>
+                    </div>
+                </div>
+                <button onclick="closeExtractDialog()" class="h-8 px-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded text-xs font-bold text-text-muted">
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <!-- Archive Path (read-only) -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Archive</label>
+                    <input type="text" id="extract-archive-path" readonly class="w-full h-10 bg-background-dark border border-border-dark rounded px-4 text-sm text-text-muted"/>
+                </div>
+
+                <!-- Destination Path -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Destination (Optional)</label>
+                    <input type="text" id="extract-destination-path" placeholder="Leave empty to extract in same directory" class="w-full h-10 bg-background-dark border border-border-dark rounded px-4 text-sm text-white placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                </div>
+
+                <!-- Extract Button -->
+                <button onclick="executeExtract()" class="w-full h-10 bg-primary hover:bg-[#33f2ff] text-background-dark rounded font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,238,255,0.3)] transition-all">
+                    <span class="material-symbols-outlined text-[18px]">unzip</span>
+                    Extract
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center">
+        <div class="text-center">
+            <div class="size-16 mx-auto mb-4 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-white font-semibold" id="loading-text">Connecting to server...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        // ============================================
+        // SSH WEB CLIENT - Real SSH Connection
+        // ============================================
+
+        const socket = io();
+        let term = null;
+        let fitAddon = null;
+        let shellStarted = false;
+
+        // State Management
+        const state = {
+            sshConfig: { host: '', port: 22, user: '', password: '', homeDir: '/' },
+            currentPath: '/',
+            isConnected: false,
+            currentFiles: [],
+            currentEditorFile: null,
+            editorCodeMirror: null
+        };
+
+        // ============================================
+        // SOCKET.IO EVENT HANDLERS
+        // ============================================
+
+        socket.on('ssh-connected', (data) => {
+            hideLoading();
+            state.isConnected = true;
+            state.currentFiles = data.files;
+            state.currentPath = data.currentPath || '/';
+
+            // Update UI
+            document.getElementById('connection-info').textContent = `${state.sshConfig.user}@${state.sshConfig.host}:${state.sshConfig.port}`;
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+
+            renderFileTable(data.files);
+            updateBreadcrumb(state.currentPath);
+            showToast(`Connected to ${state.sshConfig.host}`, 'success');
+
+            // Start interactive shell
+            startShell();
+        });
+
+        socket.on('ssh-error', (data) => {
+            hideLoading();
+            document.getElementById('login-error').textContent = data.message;
+            document.getElementById('login-error').classList.remove('hidden');
+            showToast(data.message, 'error');
+        });
+
+        socket.on('directory-listed', (data) => {
+            state.currentFiles = data.files;
+            state.currentPath = data.path;
+            renderFileTable(data.files);
+            updateBreadcrumb(data.path);
+        });
+
+        socket.on('file-read', (data) => {
+            openEditor(data.path, data.content);
+        });
+
+        socket.on('file-saved', (data) => {
+            showToast(`File saved: ${data.path}`, 'success');
+            closeEditor();
+            refreshFiles();
+        });
+
+        socket.on('file-deleted', (data) => {
+            showToast(`File deleted`, 'success');
+            refreshFiles();
+        });
+
+        socket.on('directory-created', (data) => {
+            showToast(`Directory created: ${data.path}`, 'success');
+            refreshFiles();
+        });
+
+        socket.on('file-renamed', (data) => {
+            showToast(`File renamed`, 'success');
+            refreshFiles();
+        });
+
+        socket.on('permissions-changed', (data) => {
+            showToast(`Permissions changed to ${data.mode}`, 'success');
+            refreshFiles();
+        });
+
+        socket.on('search-results', (data) => {
+            document.getElementById('search-loading').classList.add('hidden');
+            renderSearchResults(data.results);
+        });
+
+        socket.on('file-download-data', (data) => {
+            saveDownloadedFile(data.filename, data.data);
+        });
+
+        socket.on('shell-started', () => {
+            shellStarted = true;
+            console.log('Shell started');
+        });
+
+        socket.on('shell-output', (data) => {
+            if (term) {
+                term.write(data.data);
+            }
+        });
+
+        socket.on('shell-closed', () => {
+            shellStarted = false;
+            if (term) {
+                term.write('\r\nConnection closed\r\n');
+            }
+        });
+
+        socket.on('shell-error', (data) => {
+            showToast(`Shell error: ${data.message}`, 'error');
+        });
+
+        socket.on('file-uploaded', (data) => {
+            hideLoading();
+            document.getElementById('upload-progress').classList.add('hidden');
+            showToast(`File uploaded: ${data.remotePath}`, 'success');
+            closeUploadDialog();
+            refreshFiles();
+        });
+
+        socket.on('archive-compressed', (data) => {
+            hideLoading();
+            showToast(`Archive created: ${data.archivePath}`, 'success');
+            closeCompressDialog();
+            refreshFiles();
+        });
+
+        socket.on('archive-extracted', (data) => {
+            hideLoading();
+            showToast(`Archive extracted to: ${data.destinationPath}`, 'success');
+            closeExtractDialog();
+            refreshFiles();
+        });
+
+        socket.on('error', (data) => {
+            showToast(data.message, 'error');
+        });
+
+        socket.on('disconnect', () => {
+            if (state.isConnected) {
+                showToast('Connection to server lost', 'error');
+            }
+        });
+
+        // ============================================
+        // LOGIN & CONNECTION
+        // ============================================
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('login-error').classList.add('hidden');
+
+            const host = document.getElementById('ssh-host').value;
+            const port = document.getElementById('ssh-port').value;
+            const user = document.getElementById('ssh-user').value;
+            const password = document.getElementById('ssh-password').value;
+            const homeDir = document.getElementById('ssh-home').value || '/';
+
+            if (!host || !user || !password) {
+                showToast('Please fill in all required fields', 'error');
+                return;
+            }
+
+            state.sshConfig = { host, port: parseInt(port), user, password, homeDir };
+            showLoading('Connecting to SSH server...');
+
+            socket.emit('ssh-connect', state.sshConfig);
+        });
+
+        function disconnectSSH() {
+            if (confirm('Are you sure you want to disconnect?')) {
+                socket.disconnect();
+                location.reload();
+            }
+        }
+
+        // ============================================
+        // TERMINAL
+        // ============================================
+
+        function startShell() {
+            const terminalContainer = document.getElementById('terminal');
+
+            // Initialize xterm.js with macOS Terminal style
+            term = new Terminal({
+                cursorBlink: true,
+                cursorStyle: 'block',
+                fontSize: 13,
+                lineHeight: 1.2,
+                letterSpacing: 0,
+                fontFamily: '"SF Mono", "Menlo", "Monaco", "Consolas", "JetBrains Mono", monospace',
+                scrollback: 1000,
+                convertEol: true,
+                termName: 'xterm-256color',
+                theme: {
+                    background: '#1e1e1e',
+                    foreground: '#ffffff',
+                    cursor: '#ffffff',
+                    cursorAccent: '#1e1e1e',
+                    selection: 'rgba(255, 255, 255, 0.2)',
+                    black: '#000000',
+                    red: '#ff5f56',
+                    green: '#27c93f',
+                    yellow: '#ffbd2e',
+                    blue: '#27c93f',
+                    magenta: '#ff5f56',
+                    cyan: '#27c93f',
+                    white: '#ffffff',
+                    brightBlack: '#666666',
+                    brightRed: '#ff5f56',
+                    brightGreen: '#27c93f',
+                    brightYellow: '#ffbd2e',
+                    brightBlue: '#27c93f',
+                    brightMagenta: '#ff5f56',
+                    brightCyan: '#27c93f',
+                    brightWhite: '#ffffff',
+                }
+            });
+
+            // Load fit addon
+            fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+
+            term.open(terminalContainer);
+            fitAddon.fit();
+
+            // Handle terminal input
+            term.onData((data) => {
+                if (shellStarted) {
+                    socket.emit('shell-input', data);
+                }
+            });
+
+            // Handle terminal resize with debounce
+            let resizeTimeout;
+            const handleResize = () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    if (fitAddon) {
+                        fitAddon.fit();
+                        socket.emit('resize-shell', {
+                            rows: term.rows,
+                            cols: term.cols
+                        });
+                    }
+                }, 100);
+            };
+
+            window.addEventListener('resize', handleResize);
+
+            // Initial resize after a short delay
+            setTimeout(handleResize, 200);
+
+            // Start shell on server
+            socket.emit('start-shell');
+        }
+
+        function clearTerminal() {
+            if (term) {
+                term.clear();
+            }
+        }
+
+        function toggleTerminal() {
+            const panel = document.getElementById('terminal-panel');
+            const terminalDiv = document.getElementById('terminal');
+            const isHidden = panel.style.display === 'none';
+            const isMinimized = panel.style.height === '40px';
+
+            if (isHidden) {
+                panel.style.display = 'flex';
+                setTimeout(() => {
+                    if (fitAddon) fitAddon.fit();
+                }, 50);
+            } else if (isMinimized) {
+                // Restore from minimized
+                panel.style.height = '';
+                panel.classList.add('h-96');
+                terminalDiv.style.display = 'block';
+                setTimeout(() => {
+                    if (fitAddon) fitAddon.fit();
+                }, 50);
+            } else {
+                // Hide terminal
+                panel.style.display = 'none';
+            }
+        }
+
+        function expandTerminal() {
+            const panel = document.getElementById('terminal-panel');
+            const isExpanded = panel.classList.contains('h-[600px]');
+
+            if (isExpanded) {
+                panel.classList.remove('h-[600px]');
+                panel.classList.add('h-96');
+            } else {
+                panel.classList.remove('h-96');
+                panel.classList.add('h-[600px]');
+            }
+
+            setTimeout(() => {
+                if (fitAddon) fitAddon.fit();
+            }, 50);
+        }
+
+        function minimizeTerminal() {
+            const panel = document.getElementById('terminal-panel');
+            const terminalDiv = document.getElementById('terminal');
+            panel.style.height = '40px';
+            terminalDiv.style.display = 'none';
+        }
+
+        // ============================================
+        // FILE BROWSER
+        // ============================================
+
+        function navigateToPath(path) {
+            state.currentPath = path;
+            socket.emit('list-directory', path);
+        }
+
+        function renderFileTable(files) {
+            const tbody = document.getElementById('file-table-body');
+
+            if (!files || files.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-12 text-center text-text-muted">
+                            <span class="material-symbols-outlined text-4xl mb-2 opacity-50">folder_open</span>
+                            <p class="text-sm">This directory is empty</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = files.map((file, index) => {
+                const icon = getFileIcon(file);
+                const size = file.type === 'dir' ? '-' : formatFileSize(file.size);
+                const permissions = formatPermissions(file.permissions);
+                const modified = formatDate(file.modified);
+
+                return `
+                    <tr class="group hover:bg-white/[0.02] transition-colors border-l-2 border-l-transparent hover:border-l-primary">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" class="file-checkbox rounded bg-background-dark border-border-dark text-primary focus:ring-0"/>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined ${icon.color} text-[18px]">${icon.name}</span>
+                                <span class="text-white text-sm font-medium cursor-pointer hover:text-primary" onclick="openFile('${file.name}', '${file.type}')">${file.name}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-xs text-text-muted">${size}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-primary/80">${permissions}</td>
+                        <td class="px-4 py-3 text-xs text-text-muted">${modified}</td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="relative inline-block">
+                                <button onclick="toggleFileMenu(${index})" class="text-text-muted hover:text-white p-1 rounded hover:bg-white/10">
+                                    <span class="material-symbols-outlined text-[18px]">more_vert</span>
+                                </button>
+                                <div id="file-menu-${index}" class="hidden absolute right-0 top-full mt-1 bg-surface border border-border-dark rounded shadow-xl z-50 min-w-[160px] py-1">
+                                    <button onclick="editFile('${file.name}')" class="w-full px-4 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary text-text-muted flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-[16px]">edit</span> Edit
+                                    </button>
+                                    <button onclick="downloadFile('${file.name}')" class="w-full px-4 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary text-text-muted flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-[16px]">download</span> Download
+                                    </button>
+                                    <button onclick="showCompressDialog('${file.name}', '${file.type}')" class="w-full px-4 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary text-text-muted flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-[16px]">folder_zip</span> Compress
+                                    </button>
+                                    <button onclick="showExtractDialog('${file.name}')" class="archive-action w-full px-4 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary text-text-muted flex items-center gap-2 ${file.name.match(/\.(zip|tar\.gz|tgz|tar\.bz2|tbz2|tar|gz)$/i) ? '' : 'hidden'}">
+                                        <span class="material-symbols-outlined text-[16px]">unzip</span> Extract
+                                    </button>
+                                    <button onclick="renameFile('${file.name}')" class="w-full px-4 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary text-text-muted flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-[16px]">drive_file_rename_outline</span> Rename
+                                    </button>
+                                    <button onclick="changePermissions('${file.name}')" class="w-full px-4 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary text-text-muted flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-[16px]">lock</span> Permissions
+                                    </button>
+                                    <div class="h-px bg-border-dark my-1"></div>
+                                    <button onclick="deleteFile('${file.name}')" class="w-full px-4 py-2 text-left text-xs hover:bg-danger/10 hover:text-danger text-danger flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getFileIcon(file) {
+            if (file.type === 'dir') {
+                return { name: 'folder', color: 'text-yellow-500' };
+            }
+
+            const ext = file.name.split('.').pop().toLowerCase();
+            const iconMap = {
+                'html': { name: 'code', color: 'text-orange-400' },
+                'js': { name: 'javascript', color: 'text-yellow-400' },
+                'css': { name: 'css', color: 'text-blue-400' },
+                'json': { name: 'data_object', color: 'text-green-400' },
+                'md': { name: 'description', color: 'text-gray-400' },
+                'sh': { name: 'terminal', color: 'text-green-500' },
+                'log': { name: 'description', color: 'text-gray-500' },
+                'png': { name: 'image', color: 'text-purple-400' },
+                'jpg': { name: 'image', color: 'text-purple-400' },
+                'jpeg': { name: 'image', color: 'text-purple-400' },
+                'txt': { name: 'text_snippet', color: 'text-gray-400' },
+            };
+
+            return iconMap[ext] || { name: 'description', color: 'text-gray-400' };
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let size = bytes;
+            let unit = 0;
+            while (size >= 1024 && unit < units.length - 1) {
+                size /= 1024;
+                unit++;
+            }
+            return size.toFixed(1) + ' ' + units[unit];
+        }
+
+        function formatPermissions(mode) {
+            if (typeof mode === 'number') {
+                const str = mode.toString(8);
+                return str.slice(-3);
+            }
+            return mode || '644';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString();
+        }
+
+        function updateBreadcrumb(path) {
+            const parts = path.split('/').filter(p => p);
+            const breadcrumb = document.getElementById('breadcrumb');
+
+            let html = `
+                <button onclick="navigateToPath('/')" class="text-text-muted hover:text-primary transition-colors text-sm">/</button>
+            `;
+
+            let currentPath = '';
+            parts.forEach((part, index) => {
+                currentPath += '/' + part;
+                const isLast = index === parts.length - 1;
+                if (isLast) {
+                    html += `<span class="text-text-muted">/</span><span class="text-white font-semibold text-sm bg-surface px-2 py-1 rounded border border-border-dark">${part}</span>`;
+                } else {
+                    html += `<span class="text-text-muted">/</span><button onclick="navigateToPath('${currentPath}')" class="text-text-muted hover:text-primary transition-colors text-sm">${part}</button>`;
+                }
+            });
+
+            breadcrumb.innerHTML = html;
+            document.getElementById('current-path-display').textContent = path;
+        }
+
+        // ============================================
+        // FILE OPERATIONS
+        // ============================================
+
+        function openFile(name, type) {
+            if (type === 'dir') {
+                const newPath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+                navigateToPath(newPath);
+            } else {
+                editFile(name);
+            }
+        }
+
+        function editFile(name) {
+            const filePath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+            socket.emit('read-file', filePath);
+        }
+
+        function downloadFile(name) {
+            const filePath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+            showLoading('Downloading file...');
+            socket.emit('download-file', filePath);
+        }
+
+        function saveDownloadedFile(filename, base64Data) {
+            try {
+                // Convert base64 to blob
+                const binaryString = atob(base64Data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // Create blob and download link
+                const blob = new Blob([bytes], { type: 'application/octet-stream' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                hideLoading();
+                showToast(`File downloaded: ${filename}`, 'success');
+            } catch (error) {
+                hideLoading();
+                showToast(`Download failed: ${error.message}`, 'error');
+            }
+        }
+
+        function openEditor(filePath, content) {
+            state.currentEditorFile = { path: filePath, content };
+
+            document.getElementById('editor-filename').textContent = filePath.split('/').pop();
+            document.getElementById('editor-path').textContent = filePath;
+            document.getElementById('editor-modal').classList.remove('hidden');
+
+            setTimeout(() => {
+                if (state.editorCodeMirror) {
+                    state.editorCodeMirror.toTextArea();
+                }
+
+                const filename = filePath.split('/').pop();
+                const mode = getFileMode(filename);
+
+                state.editorCodeMirror = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+                    mode: mode,
+                    theme: 'dracula',
+                    lineNumbers: true,
+                    autoCloseBrackets: true,
+                    matchBrackets: true,
+                    indentUnit: 4,
+                    tabSize: 4,
+                });
+
+                state.editorCodeMirror.setValue(content || '');
+                state.editorCodeMirror.refresh();
+            }, 100);
+        }
+
+        function getFileMode(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const modes = {
+                'js': 'javascript',
+                'json': { name: 'javascript', json: true },
+                'html': 'htmlmixed',
+                'css': 'css',
+                'sh': 'shell',
+                'py': 'python',
+                'md': 'markdown',
+            };
+            return modes[ext] || 'text';
+        }
+
+        function saveFile() {
+            if (!state.currentEditorFile || !state.editorCodeMirror) return;
+
+            const content = state.editorCodeMirror.getValue();
+            socket.emit('write-file', {
+                path: state.currentEditorFile.path,
+                content: content
+            });
+        }
+
+        function closeEditor() {
+            document.getElementById('editor-modal').classList.add('hidden');
+            if (state.editorCodeMirror) {
+                state.editorCodeMirror.toTextArea();
+                state.editorCodeMirror = null;
+            }
+            state.currentEditorFile = null;
+        }
+
+        function toggleFileMenu(index) {
+            event.stopPropagation();
+            const menu = document.getElementById(`file-menu-${index}`);
+            document.querySelectorAll('[id^="file-menu-"]').forEach(m => {
+                if (m !== menu) m.classList.add('hidden');
+            });
+            menu.classList.toggle('hidden');
+        }
+
+        function deleteFile(name) {
+            if (confirm(`Are you sure you want to delete '${name}'?`)) {
+                const filePath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+                socket.emit('delete-file', filePath);
+            }
+        }
+
+        function renameFile(name) {
+            const newName = prompt('Enter new name:', name);
+            if (newName && newName !== name) {
+                const oldPath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+                const newPath = state.currentPath === '/' ? '/' + newName : state.currentPath + '/' + newName;
+                socket.emit('rename-file', { oldPath, newPath });
+            }
+        }
+
+        function changePermissions(name) {
+            const perms = prompt('Enter permissions (e.g., 755 or 644):', '644');
+            if (perms) {
+                const filePath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+                const mode = parseInt(perms, 8);
+                socket.emit('change-permissions', { path: filePath, mode });
+            }
+        }
+
+        function showNewFileDialog() {
+            const name = prompt('Enter file name:');
+            if (name) {
+                const filePath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+                socket.emit('write-file', {
+                    path: filePath,
+                    content: ''
+                });
+            }
+        }
+
+        function showNewFolderDialog() {
+            const name = prompt('Enter folder name:');
+            if (name) {
+                const folderPath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+                socket.emit('create-directory', folderPath);
+            }
+        }
+
+        function refreshFiles() {
+            socket.emit('list-directory', state.currentPath);
+        }
+
+        // Close file menus on click outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('[id^="file-menu-"]').forEach(menu => menu.classList.add('hidden'));
+        });
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function showLoading(text) {
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const colors = {
+                'success': 'bg-success/20 border-success/50 text-success',
+                'error': 'bg-danger/20 border-danger/50 text-danger',
+                'warning': 'bg-warning/20 border-warning/50 text-warning',
+                'info': 'bg-primary/20 border-primary/50 text-primary'
+            };
+
+            toast.className = `px-4 py-3 rounded border ${colors[type]} text-sm font-medium shadow-lg animate-pulse`;
+            toast.textContent = message;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // ============================================
+        // UPLOAD FUNCTIONS
+        // ============================================
+
+        function showUploadDialog() {
+            document.getElementById('upload-modal').classList.remove('hidden');
+            document.getElementById('upload-remote-path').value = state.currentPath || '/';
+            document.getElementById('upload-file-input').value = '';
+            document.getElementById('upload-progress').classList.add('hidden');
+        }
+
+        function closeUploadDialog() {
+            document.getElementById('upload-modal').classList.add('hidden');
+        }
+
+        async function executeUpload() {
+            const fileInput = document.getElementById('upload-file-input');
+            const remotePath = document.getElementById('upload-remote-path').value;
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showToast('Please select a file to upload', 'warning');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const destPath = remotePath.endsWith('/')
+                ? remotePath + file.name
+                : remotePath + '/' + file.name;
+
+            // Read file as base64
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Content = e.target.result.split(',')[1];
+
+                // Show progress
+                document.getElementById('upload-progress').classList.remove('hidden');
+                document.getElementById('upload-progress-bar').style.width = '50%';
+                document.getElementById('upload-progress-text').textContent = '50%';
+
+                showLoading('Uploading file...');
+
+                // Emit upload request
+                socket.emit('upload-file', {
+                    localPath: file.name,
+                    remotePath: destPath,
+                    content: base64Content
+                });
+
+                document.getElementById('upload-progress-bar').style.width = '100%';
+                document.getElementById('upload-progress-text').textContent = '100%';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ============================================
+        // COMPRESS FUNCTIONS
+        // ============================================
+
+        function showCompressDialog(name, type) {
+            const filePath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+
+            document.getElementById('compress-modal').classList.remove('hidden');
+            document.getElementById('compress-source-path').value = filePath;
+
+            // Suggest archive name
+            const defaultName = name + '.tar.gz';
+            document.getElementById('compress-archive-name').value = defaultName;
+        }
+
+        function closeCompressDialog() {
+            document.getElementById('compress-modal').classList.add('hidden');
+        }
+
+        function executeCompress() {
+            const sourcePath = document.getElementById('compress-source-path').value;
+            let archiveName = document.getElementById('compress-archive-name').value;
+            const format = document.getElementById('compress-format').value;
+
+            if (!archiveName) {
+                showToast('Please enter an archive name', 'warning');
+                return;
+            }
+
+            // Add extension if not provided
+            const extMap = { 'tar.gz': '.tar.gz', 'zip': '.zip', 'tar.bz2': '.tar.bz2' };
+            if (!archiveName.endsWith(extMap[format])) {
+                archiveName += extMap[format];
+            }
+
+            showLoading('Compressing...');
+            socket.emit('compress-archive', {
+                sourcePath: sourcePath,
+                archiveName: archiveName,
+                format: format
+            });
+        }
+
+        // ============================================
+        // EXTRACT FUNCTIONS
+        // ============================================
+
+        function showExtractDialog(name) {
+            const filePath = state.currentPath === '/' ? '/' + name : state.currentPath + '/' + name;
+
+            document.getElementById('extract-modal').classList.remove('hidden');
+            document.getElementById('extract-archive-path').value = filePath;
+            document.getElementById('extract-destination-path').value = '';
+        }
+
+        function closeExtractDialog() {
+            document.getElementById('extract-modal').classList.add('hidden');
+        }
+
+        function executeExtract() {
+            const archivePath = document.getElementById('extract-archive-path').value;
+            const destinationPath = document.getElementById('extract-destination-path').value || null;
+
+            showLoading('Extracting...');
+            socket.emit('extract-archive', {
+                archivePath: archivePath,
+                destinationPath: destinationPath
+            });
+        }
+
+        // ============================================
+        // SEARCH FUNCTIONS
+        // ============================================
+
+        function showSearchDialog() {
+            document.getElementById('search-modal').classList.remove('hidden');
+            document.getElementById('search-path').value = state.currentPath || '/';
+            document.getElementById('search-pattern').focus();
+            document.getElementById('search-results-container').classList.add('hidden');
+            document.getElementById('search-empty').classList.remove('hidden');
+        }
+
+        function closeSearchDialog() {
+            document.getElementById('search-modal').classList.add('hidden');
+        }
+
+        function executeSearch() {
+            const searchPath = document.getElementById('search-path').value || '/';
+            const pattern = document.getElementById('search-pattern').value.trim();
+            const searchType = document.getElementById('search-type').value;
+
+            if (!pattern) {
+                showToast('Please enter a search pattern', 'warning');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('search-empty').classList.add('hidden');
+            document.getElementById('search-results-container').classList.add('hidden');
+            document.getElementById('search-loading').classList.remove('hidden');
+
+            // Emit search request
+            socket.emit('search-files', {
+                searchPath: searchPath,
+                pattern: pattern,
+                searchType: searchType
+            });
+        }
+
+        function renderSearchResults(results) {
+            const container = document.getElementById('search-results-list');
+            const countElement = document.getElementById('search-results-count');
+
+            if (!results || results.length === 0) {
+                document.getElementById('search-loading').classList.add('hidden');
+                document.getElementById('search-results-container').classList.add('hidden');
+                document.getElementById('search-empty').classList.remove('hidden');
+                document.getElementById('search-empty').innerHTML = `
+                    <div class="text-center text-text-muted">
+                        <span class="material-symbols-outlined text-4xl mb-2 opacity-50">search_off</span>
+                        <p class="text-sm">No results found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            countElement.textContent = `${results.length} file${results.length > 1 ? 's' : ''} found`;
+
+            container.innerHTML = results.map(file => {
+                const icon = getFileIcon(file);
+                const size = file.type === 'dir' ? '-' : formatFileSize(file.size);
+                const modified = formatDate(file.modified);
+
+                return `
+                    <div class="flex items-center gap-3 px-4 py-3 bg-surface hover:bg-surface-highlight border border-border-dark rounded group transition-all cursor-pointer" onclick="openSearchResult('${file.path}', '${file.type}')">
+                        <span class="material-symbols-outlined ${icon.color} text-[20px] shrink-0">${icon.name}</span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-white text-sm font-medium truncate group-hover:text-primary">${file.name}</span>
+                            </div>
+                            <p class="text-[10px] text-text-muted font-mono truncate">${file.path}</p>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <p class="text-[10px] text-text-muted">${size}</p>
+                            <p class="text-[10px] text-text-muted">${modified}</p>
+                        </div>
+                        <button onclick="event.stopPropagation(); showSearchResultMenu('${file.path}')" class="opacity-0 group-hover:opacity-100 text-text-muted hover:text-white p-1 rounded hover:bg-white/10 transition-all">
+                            <span class="material-symbols-outlined text-[18px]">more_vert</span>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('search-loading').classList.add('hidden');
+            document.getElementById('search-results-container').classList.remove('hidden');
+        }
+
+        function openSearchResult(path, type) {
+            closeSearchDialog();
+
+            // Extract directory from path
+            const lastSlash = path.lastIndexOf('/');
+            const dir = path.substring(0, lastSlash) || '/';
+            const filename = path.substring(lastSlash + 1);
+
+            // Navigate to directory
+            navigateToPath(dir);
+
+            // If it's a file, open editor
+            if (type === 'file') {
+                setTimeout(() => {
+                    const files = state.currentFiles;
+                    const file = files.find(f => f.name === filename);
+                    if (file) {
+                        editFile(filename);
+                    }
+                }, 500);
+            }
+        }
+
+        function showSearchResultMenu(path) {
+            const action = prompt('Choose action:\n1. Open\n2. Edit\n3. Download\n\nEnter number:');
+            if (action === '1') {
+                const lastSlash = path.lastIndexOf('/');
+                const dir = path.substring(0, lastSlash) || '/';
+                closeSearchDialog();
+                navigateToPath(dir);
+            } else if (action === '2') {
+                const lastSlash = path.lastIndexOf('/');
+                const dir = path.substring(0, lastSlash) || '/';
+                const filename = path.substring(lastSlash + 1);
+                closeSearchDialog();
+                navigateToPath(dir);
+                setTimeout(() => editFile(filename), 500);
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (!document.getElementById('editor-modal').classList.contains('hidden')) {
+                    closeEditor();
+                } else if (!document.getElementById('search-modal').classList.contains('hidden')) {
+                    closeSearchDialog();
+                } else if (!document.getElementById('upload-modal').classList.contains('hidden')) {
+                    closeUploadDialog();
+                } else if (!document.getElementById('compress-modal').classList.contains('hidden')) {
+                    closeCompressDialog();
+                } else if (!document.getElementById('extract-modal').classList.contains('hidden')) {
+                    closeExtractDialog();
+                }
+            }
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                if (!document.getElementById('editor-modal').classList.contains('hidden')) {
+                    saveFile();
+                }
+            }
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                showSearchDialog();
+            }
+        });
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const hostInput = document.getElementById('ssh-host');
+            if (hostInput && !hostInput.value) {
+                hostInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>
